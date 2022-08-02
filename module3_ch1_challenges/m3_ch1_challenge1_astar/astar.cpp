@@ -52,20 +52,12 @@ vector<char> AStar(map<char, Node>& graph, char start, char end, int h)
 
 	map<char, char> CameFrom = map<char, char>();
 
-	//vector<char> ClosedList = vector<char>();
 
 	map<char, int> gScore = map<char, int>();
 	gScore[start] = 0;
 
-	/*cout << "gScore : \n";
-	for (map<char, int>::iterator it = gScore.begin(); it != gScore.end(); it++)
-	{
-		cout << it->first << ",";
-	}
-	cout << endl;*/
-
 	map<char, int> fScore = map<char, int>();
-	fScore[start] = 0;	// should be heuristic but dont have rn
+	fScore[start] = h;	// should be heuristic but dont have rn
 
 	OpenList.push_back('a');
 	Weights.push_back(0);
@@ -76,17 +68,14 @@ vector<char> AStar(map<char, Node>& graph, char start, char end, int h)
 		int min_value = INT_MAX;
 		int min_index = -1;
 
-		//cout << "OpenList : " << endl;
 		for (int i = 0; i < OpenList.size(); i++) 
 		{
-			//cout << OpenList[i] << ", ";
 			if (Weights[i] < min_value)
 			{
 				min_index = i;
 				min_value = Weights[i];
 			}
 		}
-		//cout << endl;
 
 		// OpenList is Empty so all paths have been exhausted but no solution found
 		if (min_index == -1)
@@ -122,63 +111,31 @@ vector<char> AStar(map<char, Node>& graph, char start, char end, int h)
 					// add it into OpenList to explore later
 		Node n = graph[currentNode];
 		map<char, int> neighbors = n.GetAdjacent();
-		//cout << "----Neighbors : ";
 		for (map<char,int>::iterator it = neighbors.begin(); it != neighbors.end(); it++)
 		{
-			//cout << it->first << ",";
 			// tentative score = (gScore up to currentNode) + (weight from currentNode -> neighbor[i])
 			int tentative = gScore[currentNode] + it->second;
 
 			// if gScore not found for a node yet, it should be infinite
-			//cout << "gScore Key Check : " << gScore.count(it->first) << endl;
 			if (gScore.count(it->first) <= 0)
 			{
 				gScore[it->first] = INT_MAX;
 			}
 
-			//cout << "gScore[" << it->first << "] = " << gScore[it->first] << endl;
-			//cout << "tentative score = " << tentative << endl;
-
 			if (tentative < gScore[it->first])
 			{
-				//cout << endl;
-				//cout << "Current : " << currentNode << endl;
-				//cout << "Came From : " << it->first << endl;
-
 				CameFrom[it->first] = currentNode;
 				gScore[it->first] = tentative;
 				fScore[it->first] = tentative + h;
 				if (find(OpenList.begin(), OpenList.end(), it->first) == OpenList.end())
 				{
-					//cout << "Neighbor " << it->first << " not in Open, place inside now...";
 					OpenList.push_back(it->first);
 					Weights.push_back(tentative);
 				}
 			}
 		}
-		//cout << endl;
 	}
 }
-
-
-//void AddConnection(map<char, Node> & graph, char new_x, char new_y, int cost)
-//{
-//	graph[new_x].AddAdjacent(new_y, cost);
-//	graph[new_y].AddAdjacent(new_x, cost);
-//}
-//
-//void PrintGraph(map<char, vector<pair<char,int>>> graph)
-//{
-//	for (map<char, vector<pair<char, int>>>::iterator it = graph.begin(); it != graph.end(); it++)
-//	{
-//		cout << "Source " << it->first << ": ";
-//		for (int i = 0; i < it->second.size(); i++)
-//		{
-//			cout << "(" << it->second[i].first << "," << it->second[i].second << "), ";
-//		}
-//		cout << endl;
-//	}
-//}
 
 vector<char> ReconstructPath(map<char, char> CameFrom, char start, char goal)
 {
