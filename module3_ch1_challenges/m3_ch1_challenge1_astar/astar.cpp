@@ -66,7 +66,7 @@ void AStar(map<char, Node>& graph, char start, char end, int h)
 
 	while (!OpenList.empty())
 	{
-		// Pop out of OpenList the value with the samllest weight as "Current"
+		// Pop out of OpenList the value with the smallest weight as "Current"
 		int min_value = INT_MAX;
 		int min_index = -1;
 		for (int i = 0; i < OpenList.size(); i++) 
@@ -105,7 +105,24 @@ void AStar(map<char, Node>& graph, char start, char end, int h)
 				// nodeScore[neighbor] = tempScore
 				// if neighbor not already in OpenList
 					// add it into OpenList to explore later
-		graph[currentNode];
+		Node n = graph[currentNode];
+		map<char, int> neighbors = n.GetAdjacent();
+		for (map<char,int>::iterator it = neighbors.begin(); it != neighbors.end(); it++)
+		{
+			// tentative score = (gScore up to currentNode) + (weight from currentNode -> neighbor[i])
+			int tentative = gScore[currentNode] + it->second;
+			if (tentative < gScore[it->first])
+			{
+				CameFrom[it->first] = currentNode;
+				gScore[it->first] = tentative;
+				fScore[it->first] = tentative + h;
+				if (find(OpenList.begin(), OpenList.end(), it->first) == OpenList.end())
+				{
+					OpenList.push_back(it->first);
+					Weights.push_back(tentative);
+				}
+			}
+		}
 	}
 }
 
