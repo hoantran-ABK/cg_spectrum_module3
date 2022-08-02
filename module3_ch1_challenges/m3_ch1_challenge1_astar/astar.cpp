@@ -1,51 +1,50 @@
 #include <iostream>
 #include <queue>
 
-#include "Graph.h"
 #include "Node.h"
 
-void AStar(map<char, Node>& graph, char start, char end, int h);
+vector<char> AStar(map<char, Node>& graph, char start, char end, int h);
 
-void AddConnection(map<char, Node>& graph, char new_x, char new_y, int cost);
-
-void PrintGraph(map<char, vector<pair<char,int>>> graph);
-
-void ReconstructPath(map<char,char> CameFrom, char start, char goal);
-
-class NodeComparison 
-{
-	bool operator() (pair<char,int> lhs, pair<char,int> rhs)
-	{
-		return false;
-	}
-};
+vector<char> ReconstructPath(map<char,char> CameFrom, char start, char goal);
 
 int main()
 {
-	map<char, vector<pair<char, int>>> graph;
-	graph['a'] = vector<pair<char, int>>();
-	graph['b'] = vector<pair<char, int>>();
-	graph['c'] = vector<pair<char, int>>();
-	graph['d'] = vector<pair<char, int>>();
+	map<char, Node> graph = map<char, Node>();
+	Node a = Node('a');
+	Node b = Node('b');
+	Node c = Node('c');
+	Node d = Node('d');
+	Node e = Node('e');
 
-	graph['a'].push_back(make_pair('b', 5));
-	graph['b'].push_back(make_pair('a', 5));
+	a.AddAdjacent('b', 5);
+	b.AddAdjacent('a', 5);
 
-	graph['b'].push_back(make_pair('c', 1));
-	graph['c'].push_back(make_pair('b', 1));
+	b.AddAdjacent('c', 1);
+	c.AddAdjacent('b', 1);
 
-	graph['a'].push_back(make_pair('d', 7));
-	graph['d'].push_back(make_pair('a', 7));
+	a.AddAdjacent('d', 7);
+	d.AddAdjacent('a', 7);
 
-	graph['c'].push_back(make_pair('d', 1));
-	graph['d'].push_back(make_pair('c', 1));
+	c.AddAdjacent('d', 1);
+	d.AddAdjacent('c', 1);
 
-	PrintGraph(graph);
+	e.AddAdjacent('a', 2);
+	a.AddAdjacent('e', 2);
 
+	e.AddAdjacent('d', 4);
+	d.AddAdjacent('e', 4);
+
+	graph['a'] = a;
+	graph['b'] = b;
+	graph['c'] = c;
+	graph['d'] = d;
+	graph['e'] = e;
+
+	vector<char> reversedPath = AStar(graph, 'a', 'd', 0);
 
 }
 
-void AStar(map<char, Node>& graph, char start, char end, int h)
+vector<char> AStar(map<char, Node>& graph, char start, char end, int h)
 {
 
 	vector<char> OpenList = vector<char>();
@@ -58,6 +57,13 @@ void AStar(map<char, Node>& graph, char start, char end, int h)
 	map<char, int> gScore = map<char, int>();
 	gScore[start] = 0;
 
+	/*cout << "gScore : \n";
+	for (map<char, int>::iterator it = gScore.begin(); it != gScore.end(); it++)
+	{
+		cout << it->first << ",";
+	}
+	cout << endl;*/
+
 	map<char, int> fScore = map<char, int>();
 	fScore[start] = 0;	// should be heuristic but dont have rn
 
@@ -69,24 +75,30 @@ void AStar(map<char, Node>& graph, char start, char end, int h)
 		// Pop out of OpenList the value with the smallest weight as "Current"
 		int min_value = INT_MAX;
 		int min_index = -1;
+
+		//cout << "OpenList : " << endl;
 		for (int i = 0; i < OpenList.size(); i++) 
 		{
+			//cout << OpenList[i] << ", ";
 			if (Weights[i] < min_value)
 			{
 				min_index = i;
 				min_value = Weights[i];
 			}
 		}
+		//cout << endl;
 
 		// OpenList is Empty so all paths have been exhausted but no solution found
 		if (min_index == -1)
 		{
 			cout << "No path found..." << endl;
-			return;
+			return vector<char>();
 		}
 
 		char currentNode = OpenList[min_index];
 		int currentMinScore = min_value;
+
+		cout << "Visiting (" << currentNode << ")...\n";
 
 		OpenList.erase(OpenList.begin()+min_index);
 		Weights.erase(Weights.begin() + min_index);
@@ -94,8 +106,11 @@ void AStar(map<char, Node>& graph, char start, char end, int h)
 		// if "Current" is the goal: reconstruct path
 		if (currentNode == end)
 		{
-			ReconstructPath(CameFrom, start, end);
-			return;
+			cout << "Done... Reconstructing Path Now..." << endl;
+			vector<char> reversedPath = ReconstructPath(CameFrom, start, end);
+			cout << endl;
+			cout << "Total Cost : " << gScore[end];
+			return reversedPath;
 		}
 
 		// For all neighbors of "Current"
@@ -107,41 +122,85 @@ void AStar(map<char, Node>& graph, char start, char end, int h)
 					// add it into OpenList to explore later
 		Node n = graph[currentNode];
 		map<char, int> neighbors = n.GetAdjacent();
+		//cout << "----Neighbors : ";
 		for (map<char,int>::iterator it = neighbors.begin(); it != neighbors.end(); it++)
 		{
+			//cout << it->first << ",";
 			// tentative score = (gScore up to currentNode) + (weight from currentNode -> neighbor[i])
 			int tentative = gScore[currentNode] + it->second;
+
+			// if gScore not found for a node yet, it should be infinite
+			//cout << "gScore Key Check : " << gScore.count(it->first) << endl;
+			if (gScore.count(it->first) <= 0)
+			{
+				gScore[it->first] = INT_MAX;
+			}
+
+			//cout << "gScore[" << it->first << "] = " << gScore[it->first] << endl;
+			//cout << "tentative score = " << tentative << endl;
+
 			if (tentative < gScore[it->first])
 			{
+				//cout << endl;
+				//cout << "Current : " << currentNode << endl;
+				//cout << "Came From : " << it->first << endl;
+
 				CameFrom[it->first] = currentNode;
 				gScore[it->first] = tentative;
 				fScore[it->first] = tentative + h;
 				if (find(OpenList.begin(), OpenList.end(), it->first) == OpenList.end())
 				{
+					//cout << "Neighbor " << it->first << " not in Open, place inside now...";
 					OpenList.push_back(it->first);
 					Weights.push_back(tentative);
 				}
 			}
 		}
+		//cout << endl;
 	}
 }
 
 
-void AddConnection(map<char, Node> & graph, char new_x, char new_y, int cost)
-{
-	graph[new_x].AddAdjacent(new_y, cost);
-	graph[new_y].AddAdjacent(new_x, cost);
-}
+//void AddConnection(map<char, Node> & graph, char new_x, char new_y, int cost)
+//{
+//	graph[new_x].AddAdjacent(new_y, cost);
+//	graph[new_y].AddAdjacent(new_x, cost);
+//}
+//
+//void PrintGraph(map<char, vector<pair<char,int>>> graph)
+//{
+//	for (map<char, vector<pair<char, int>>>::iterator it = graph.begin(); it != graph.end(); it++)
+//	{
+//		cout << "Source " << it->first << ": ";
+//		for (int i = 0; i < it->second.size(); i++)
+//		{
+//			cout << "(" << it->second[i].first << "," << it->second[i].second << "), ";
+//		}
+//		cout << endl;
+//	}
+//}
 
-void PrintGraph(map<char, vector<pair<char,int>>> graph)
+vector<char> ReconstructPath(map<char, char> CameFrom, char start, char goal)
 {
-	for (map<char, vector<pair<char, int>>>::iterator it = graph.begin(); it != graph.end(); it++)
+	vector<char> reversedPath = vector<char>();
+	char current = goal;
+	reversedPath.push_back(current);
+
+	while (true)
 	{
-		cout << "Source " << it->first << ": ";
-		for (int i = 0; i < it->second.size(); i++)
+		char prev = CameFrom[current];
+		current = prev;
+		reversedPath.push_back(current);
+
+		if (current == start)
 		{
-			cout << "(" << it->second[i].first << "," << it->second[i].second << "), ";
+			break;
 		}
-		cout << endl;
 	}
+
+	for (int i = reversedPath.size() - 1; i >= 0; i--)
+	{
+		cout << reversedPath[i];
+	}
+	return reversedPath;
 }
